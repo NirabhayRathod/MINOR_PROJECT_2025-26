@@ -27,21 +27,33 @@ prompt = ChatPromptTemplate.from_template(
     '''
 )
 
-# RAG initialization function
+# RAG initialization function with FAISS caching
 def RAG_function():
     if 'vectors' not in st.session_state:
         st.session_state.embedding = HuggingFaceEmbeddings(model_name='BAAI/bge-small-en')
-        st.session_state.loader = PyPDFLoader('indian_laws_final_understandable.pdf')
-        st.session_state.doc = st.session_state.loader.load()
-        
-        # Split document into larger, overlapping chunks
-        st.session_state.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1200,  # slightly bigger chunks
-            chunk_overlap=300  # more overlap
-        )
-        # Embed full document (no slicing)
-        st.session_state.final_doc = st.session_state.text_splitter.split_documents(st.session_state.doc)
-        st.session_state.vectors = FAISS.from_documents(st.session_state.final_doc, st.session_state.embedding)
+        faiss_index_path = "faiss_index"
+
+        # If saved FAISS index exists, load it safely
+        if os.path.exists(faiss_index_path):
+            st.session_state.vectors = FAISS.load_local(
+                faiss_index_path,
+                st.session_state.embedding,
+                allow_dangerous_deserialization=True
+            )
+        else:
+            # Load and split the PDF
+            st.session_state.loader = PyPDFLoader('indian_laws_final_understandable.pdf')
+            st.session_state.doc = st.session_state.loader.load()
+            
+            st.session_state.text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1200,  # slightly bigger chunks
+                chunk_overlap=300  # more overlap
+            )
+            st.session_state.final_doc = st.session_state.text_splitter.split_documents(st.session_state.doc)
+            
+            # Create FAISS vector store and save it
+            st.session_state.vectors = FAISS.from_documents(st.session_state.final_doc, st.session_state.embedding)
+            st.session_state.vectors.save_local(faiss_index_path)
        
 # Streamlit UI
 user_query = st.text_input('Enter your query from document')

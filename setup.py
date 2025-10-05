@@ -15,7 +15,7 @@ def function(path : str)-> List[str]:
 setup(
     name='RAG CHATBOT FOR LEGAL CONSULTANCY ',
     version='0.0.1',
-    author='Nirabhay Singh Rathod',
+    author='Nirabhay Singh Rathod , Aman Bansal , Ahmad Raja Khan',
     author_email='nirbhay105633016@gmail.com',
     packages=find_packages(),
     requires=function('requirements.txt')
